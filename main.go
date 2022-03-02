@@ -11,6 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var count int64
+var sema = make(chan struct{}, 1)
+
 func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	port := os.Getenv("PORT")
@@ -23,6 +26,11 @@ func main() {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("received connection from", r.RemoteAddr)
 		w.WriteHeader(http.StatusOK)
+
+		sema <- struct{}{}
+		count++
+		<-sema
+		fmt.Println("count", count)
 	})
 
 	fmt.Println("starting http listener")

@@ -23,8 +23,18 @@ func main() {
 
 	mux := http.DefaultServeMux
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("received connection from", r.RemoteAddr)
+	mux.HandleFunc("/endpoint1", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("received connection to endpoint1 from", r.RemoteAddr)
+		w.WriteHeader(http.StatusOK)
+
+		sema <- struct{}{}
+		count++
+		<-sema
+		fmt.Println("count", count)
+	})
+
+	mux.HandleFunc("/endpoint2", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("received connection to endpoint2 from", r.RemoteAddr)
 		w.WriteHeader(http.StatusOK)
 
 		sema <- struct{}{}
@@ -43,7 +53,7 @@ func main() {
 		}
 	}()
 
-	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
+	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 2 seconds
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
